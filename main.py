@@ -23,10 +23,9 @@ logger = logging.getLogger(__name__)
 
 class ImageEditorApp:
     """
-    GUI-приложение для базовой обработки изображений:
-    загрузка, видео-кадр, каналы, маскирование, резкость и рисование.
+        GUI-приложение для базовой обработки изображений:
+        загрузка, видео-кадр, каналы, маскирование, резкость и рисование.
     """
-
     def __init__(self, root: tk.Tk):
         """
         Инициализирует окно приложения, настраивает панель инструментов и область отображения.
@@ -39,10 +38,9 @@ class ImageEditorApp:
         self.root.geometry("800x600")
         self.root.minsize(600, 400)
 
-        self.img: np.ndarray | None = None
-        """Текущее изображение в формате numpy RGB массива."""
-        self.tk_img: ImageTk.PhotoImage | None = None
-        """PhotoImage для отображения в Tkinter."""
+        self.img = None              # текущее изображение (numpy RGB)
+        self.prev_img = None         # предыдущее состояние изображения
+        self.tk_img = None           # для отображения через ImageTk
 
         # Единая панель инструментов
         self.toolbar = tk.Frame(self.root, bd=1, relief=tk.RAISED)
@@ -66,6 +64,7 @@ class ImageEditorApp:
             - Маска по красному
             - Резкость
             - Рисовать прямоугольник
+            - Отменить
         """
         # Меню "Файл"
         file_mb = tk.Menubutton(self.toolbar, text="Файл", relief=tk.RAISED)
@@ -89,6 +88,7 @@ class ImageEditorApp:
             ("Маска по красному", self.red_mask),
             ("Резкость", self.sharpen),
             ("Рисовать прямоугольник", self.draw_rectangle),
+            ("Отменить", self.undo),
         ]
         for text, cmd in btn_specs:
             tk.Button(self.toolbar, text=text, command=cmd).pack(side=tk.LEFT, padx=4)
@@ -110,8 +110,8 @@ class ImageEditorApp:
         toolbar_h = self.toolbar.winfo_height()
 
         # Вычисляем новый размер окна с учётом отступов
-        pad_x = 20  # отступ слева/справа
-        pad_y = 20  # отступ сверху/снизу
+        pad_x = 20
+        pad_y = 20
         new_w = img_w + pad_x
         new_h = img_h + toolbar_h + pad_y
         self.root.geometry(f"{new_w}x{new_h}")
@@ -121,15 +121,14 @@ class ImageEditorApp:
         Открывает диалог выбора файла и загружает изображение через PIL,
         поддерживает пути с кириллицей.
         """
-        path = filedialog.askopenfilename(
-            filetypes=[("Image files", "*.png;*.jpg;*.jpeg")]
-        )
+        path = filedialog.askopenfilename(filetypes=[("Image files", "*.png;*.jpg;*.jpeg")])
         if not path:
             return
         try:
             pil_img = Image.open(path).convert("RGB")
+            self.prev_img = None
             self.img = np.array(pil_img)
-            logger.info(f"Изображение загружено: {path}")
+            logger.info(f"Загружено изображение: {path}")
             self._update_display(self.img)
         except Exception as e:
             logger.error(f"Ошибка загрузки: {e}")
@@ -148,6 +147,7 @@ class ImageEditorApp:
         if not ret:
             messagebox.showerror("Ошибка", "Не удалось захватить кадр")
             return
+        self.prev_img = None
         self.img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         logger.info("Снимок с веб-камеры сделан")
         self._update_display(self.img)
@@ -162,6 +162,7 @@ class ImageEditorApp:
         if self.img is None:
             messagebox.showwarning("Внимание", "Сначала загрузите изображение")
             return
+        self.prev_img = self.img.copy()
         idx = {"R": 0, "G": 1, "B": 2}[channel]
         ch = self.img[:, :, idx]
         rgb = np.stack([ch] * 3, axis=-1)
@@ -179,6 +180,7 @@ class ImageEditorApp:
         thresh = simpledialog.askinteger("Порог", "Задайте порог (0–255)", minvalue=0, maxvalue=255)
         if thresh is None:
             return
+        self.prev_img = self.img.copy()
         mask = (self.img[:, :, 0] > thresh).astype(np.uint8) * 255
         rgb = np.stack([mask] * 3, axis=-1)
         logger.info(f"Маска по красному > {thresh}")
@@ -191,9 +193,8 @@ class ImageEditorApp:
         if self.img is None:
             messagebox.showwarning("Внимание", "Сначала загрузите изображение")
             return
-        kernel = np.array([[0, -1, 0],
-                           [-1, 5, -1],
-                           [0, -1, 0]])
+        self.prev_img = self.img.copy()
+        kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
         sharp = cv2.filter2D(self.img, -1, kernel)
         logger.info("Применён фильтр резкости")
         self._update_display(sharp)
@@ -211,18 +212,35 @@ class ImageEditorApp:
         y2 = simpledialog.askinteger("Y2", "Введите Y2", minvalue=0)
         if None in (x1, y1, x2, y2):
             return
+        self.prev_img = self.img.copy()
         img_copy = self.img.copy()
         cv2.rectangle(img_copy, (x1, y1), (x2, y2), (0, 0, 255), thickness=2)
         logger.info(f"Нарисован прямоугольник: ({x1},{y1})->({x2},{y2})")
         self._update_display(img_copy)
 
+    def undo(self):
+        """
+        Откатывает состояние фото до предыдущего.
+        """
+        if self.prev_img is not None:
+            self.img = self.prev_img.copy()
+            self._update_display(self.img)
+            logger.info("Откат к предыдущему изображению выполнен")
+        else:
+            messagebox.showinfo("Отменить", "Нет предыдущего состояния для отката.")
+
     def run(self):
-        """
-        Запускает главный цикл обработки событий Tkinter.
-        """
         self.root.mainloop()
 
 
-if __name__ == "__main__":
+def main():
+    """
+    Запускает главный цикл обработки событий Tkinter.
+    """
+    import tkinter as tk
     app = ImageEditorApp(tk.Tk())
     app.run()
+
+
+if __name__ == "__main__":
+    main()
