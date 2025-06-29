@@ -31,8 +31,3 @@ Thumbs.db
 
 # Screenshots/docs
 docs/screenshots/
-
-# Others
-*.egg-info/
-dist/
-build/
