@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+img_app_env/  # если вы создаёте окружение прямо в папке проекта
+
+# Conda environment files (если создаёте не в корне проекта)
+*.conda/
+envs/
+*.yaml
+
+# PyCharm
+.idea/
+
+# VSCode
+.vscode/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Screenshots/docs
+docs/screenshots/
+
+# Others
+*.egg-info/
+dist/
+build/
