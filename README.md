@@ -34,12 +34,24 @@ image-editor
 ### Требования
 - Python 3.8+
 - pip
+- Рекомендуется использовать виртуальное окружение
 
 ### Шаги установки:
 ```bash
 # Клонирование репозитория
 git clone https://github.com/teremomba/Practica_Tokarev
-cd image-editor-practice
+cd Practica_Tokarev
+
+Создать виртуальное окружение (ОБЯЗАТЕЛЬНО на Linux/macOS)
+
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# macOS / Linux
+python3 -m venv venv
+source venv/bin/activate
+
 
 # Установка зависимостей
 pip install -r requirements.txt
@@ -48,6 +60,8 @@ pip install -r requirements.txt
 pip install .
 
 ```
+> **Примечание для пользователей Linux:**
+> Не устанавливайте зависимости глобально — это вызовет ошибку `externally-managed-environment`. Используйте `venv`, как показано выше, или добавляйте `--break-system-packages` на свой страх и риск.
 
 ### Запуск без установки
 ```bash
