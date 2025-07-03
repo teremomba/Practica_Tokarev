@@ -1,5 +1,3 @@
-# main.py
-
 """
 Приложение для редактирования изображений с единой панелью инструментов,
 автоматически расширяющее окно под размер загруженного изображения.
@@ -58,13 +56,14 @@ class ImageEditorApp:
         Создаёт единую панель инструментов с выпадающими меню и кнопками.
 
         Меню:
-            - Файл: Загрузить, С веб-камеры
+            - Файл: Загрузить, С веб-камеры, Выход
             - Канал: Red, Green, Blue
         Кнопки:
             - Маска по красному
             - Резкость
             - Рисовать прямоугольник
             - Отменить
+            - Выход
         """
         # Меню "Файл"
         file_mb = tk.Menubutton(self.toolbar, text="Файл", relief=tk.RAISED)
@@ -89,6 +88,7 @@ class ImageEditorApp:
             ("Резкость", self.sharpen),
             ("Рисовать прямоугольник", self.draw_rectangle),
             ("Отменить", self.undo),
+            ("Выход", self.root.quit)  # Добавлена кнопка выхода
         ]
         for text, cmd in btn_specs:
             tk.Button(self.toolbar, text=text, command=cmd).pack(side=tk.LEFT, padx=4)
